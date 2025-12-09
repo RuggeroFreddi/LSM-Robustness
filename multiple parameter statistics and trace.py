@@ -1,22 +1,16 @@
-"""nota per me: la formula per i MEMBRANE_THRESHOLD 
-MEMBRANE_THRESHOLD = (MEMBRANE_THRESHOLD - 2 * I * REFRACTORY_PERIOD) * (beta_rir / beta_new) + 2 * I * REFRACTORY_PERIOD
-esempio: se voglio sapere quale valore di MEMBRANE_THRESHOLD usare affinchè il punto critico sia uguale a quello che avevo usando
-MEMBRANE_THRESHOLD_rif e beta_new, nel momento in cui beta è beta_rif, allora uso la formual qui sopra"""
-
 import os
-import yaml
 from datetime import date
 
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
+import yaml
 
 from LSM.model import SimulationParams
 from functions.simulates import simulate
 from functions.cross_validations import cross_validation_rf, cross_validation_slp
 
 # the following global variables will be loaded using function load_config
-MIN_INTERVAL = 1/100
+MIN_INTERVAL = 1 / 100
 MAX_INTERVAL = 2
 WEIGHT_VARIANCE = None
 RELOAD = None
@@ -44,27 +38,29 @@ CSV_NAME_TRACE = None
 STATISTIC_SET = None
 MEMBRANE_RESET = None
 
+
 def load_config(path: str = "settings/config.yaml"):
     global TASK, CV_NUM_SPLITS, ACCURACY_THRESHOLD
     global NUM_NEURONS, MEMBRANE_THRESHOLD, REFRACTORY_PERIOD, NUM_OUTPUT_NEURONS
     global LEAK_COEFFICIENT, CURRENT_AMPLITUDE, PRESYNAPTIC_DEGREE
     global SMALL_WORLD_GRAPH_P, SMALL_WORLD_GRAPH_K, TRACE_TAU
     global NUM_WEIGHT_STEPS, PARAM_NAME, PARAMETER_VALUES
-    global DATASET_PATH, CSV_NAME_STATISTICS, CSV_NAME_TRACE, RESULTS_DIR_STATISTICS, RESULTS_DIR_TRACE
+    global DATASET_PATH, CSV_NAME_STATISTICS, CSV_NAME_TRACE
+    global RESULTS_DIR_STATISTICS, RESULTS_DIR_TRACE
     global STATISTIC_SET, MEMBRANE_RESET, WEIGHT_VARIANCE, RELOAD
 
     if not os.path.exists(path):
-        raise FileNotFoundError(f"Config non trovato: {path}")
+        raise FileNotFoundError(f"Config not found: {path}")
 
     with open(path, "r") as f:
         cfg = yaml.safe_load(f)
 
-    # calcolo derivato
-    presyn = cfg["PRESYNAPTIC_DEGREE"]
+    # derived value
+    presynaptic_degree = cfg["PRESYNAPTIC_DEGREE"]
     num_neurons = cfg["NUM_NEURONS"]
-    cfg["SMALL_WORLD_GRAPH_K"] = int(presyn * num_neurons * 2)
+    cfg["SMALL_WORLD_GRAPH_K"] = int(presynaptic_degree * num_neurons * 2)
 
-    # assegno alle globali
+    # assign to globals
     TASK = cfg["TASK"]
     CV_NUM_SPLITS = cfg["CV_NUM_SPLITS"]
     ACCURACY_THRESHOLD = cfg["ACCURACY_THRESHOLD"]
@@ -81,22 +77,23 @@ def load_config(path: str = "settings/config.yaml"):
     NUM_WEIGHT_STEPS = cfg["NUM_WEIGHT_STEPS"]
     PARAM_NAME = cfg["PARAM_NAME"]
     PARAMETER_VALUES = cfg["PARAMETER_VALUES"]
-    MEMBRANE_RESET = cfg ["MEMBRANE_RESET"]
-    WEIGHT_VARIANCE = cfg ["WEIGHT_VARIANCE"]
-    RELOAD = cfg ["RELOAD"]
+    MEMBRANE_RESET = cfg["MEMBRANE_RESET"]
+    WEIGHT_VARIANCE = cfg["WEIGHT_VARIANCE"]
+    RELOAD = cfg["RELOAD"]
+
     if MEMBRANE_RESET:
         print("membrane reset true")
     else:
         print("membrane reset false")
-    
-    if TASK=="MNIST": 
+
+    if TASK == "MNIST":
         DATASET_PATH = "dati/mnist_rate_encoded.npz"
         STATISTIC_SET = 1
-    elif TASK  == "TRAJECTORY":
+    elif TASK == "TRAJECTORY":
         DATASET_PATH = "dati/trajectory_spike_encoded.npz"
         STATISTIC_SET = 2
     else:
-        print("selected unknown task.")
+        print("Selected unknown task.")
         exit()
 
     today_str = date.today().strftime("%Y_%m_%d")
@@ -113,15 +110,15 @@ def load_config(path: str = "settings/config.yaml"):
 
     return cfg
 
+
 def load_dataset(filename: str):
-    """
-    Return (data, labels) from a .npz file.
-    """
+    """Return (data, labels) from a .npz file."""
     npz_data = np.load(filename)
     return npz_data["data"], npz_data["labels"]
 
+
 def _to_builtin(obj):
-    # converte ricorsivamente numpy/pandas -> tipi Python
+    """Recursively convert numpy/pandas objects to Python built-ins."""
     if isinstance(obj, (np.floating, np.float32, np.float64)):
         return float(obj)
     if isinstance(obj, (np.integer, np.int32, np.int64)):
@@ -129,18 +126,22 @@ def _to_builtin(obj):
     if isinstance(obj, np.ndarray):
         return [_to_builtin(x) for x in obj.tolist()]
     if isinstance(obj, dict):
-        return { _to_builtin(k): _to_builtin(v) for k, v in obj.items() }
+        return {_to_builtin(k): _to_builtin(v) for k, v in obj.items()}
     if isinstance(obj, (list, tuple, set)):
-        return [ _to_builtin(x) for x in obj ]
-    return obj  # stringhe, bool, None, ecc.
+        return [_to_builtin(x) for x in obj]
+    return obj  # strings, bool, None, etc.
 
-def save_experiment_metadata(results_dir: str,
-                             parameter_name: str,
-                             parameter_values: list[float],
-                             output_features: str,
-                             mean_I):
+
+def save_experiment_metadata(
+    results_dir: str,
+    parameter_name: str,
+    parameter_values: list[float],
+    output_features: str,
+    mean_I,
+) -> None:
+    """Save experiment configuration and metadata as YAML."""
     metadata = {
-        "experiment" :{
+        "experiment": {
             "task": TASK,
             "output_features": output_features,
             "mean_I": mean_I,
@@ -170,35 +171,28 @@ def save_experiment_metadata(results_dir: str,
         "tested_parameter": {
             "name": parameter_name,
             "values": parameter_values,
-        }
+        },
     }
 
-    # 💡 qui puliamo tutto
     metadata = _to_builtin(metadata)
 
     yaml_path = os.path.join(results_dir, "experiment_metadata.yaml")
     with open(yaml_path, "w") as file:
         yaml.safe_dump(metadata, file, sort_keys=False)
 
-def compute_mean_I(inputs: np.ndarray):
-    """
-    Estimate the average input current injected into the network.
-    """
-    avg_input_current = (
-        np.sum(inputs)
-        / (inputs.shape[0] * inputs.shape[2])
-    )
 
+def compute_mean_I(inputs: np.ndarray):
+    """Estimate the average input current injected into the network."""
+    avg_input_current = np.sum(inputs) / (inputs.shape[0] * inputs.shape[2])
     return avg_input_current
+
 
 def compute_critical_weight(
     inputs: np.ndarray,
     parameter_name: str,
     parameter_value: float,
 ):
-    """
-    Estimate the average input current and the critical synaptic weight.
-    """
+    """Estimate the average input current and the critical synaptic weight."""
     beta = PRESYNAPTIC_DEGREE
     current_amplitude = CURRENT_AMPLITUDE
     membrane_threshold = MEMBRANE_THRESHOLD
@@ -223,16 +217,13 @@ def compute_critical_weight(
     return avg_input_current, critical_weight
 
 
-def test_parameter_values(data, labels , param_name: str, param_values: list[float]):
-    """
-    For each value in param_values:
-      - set the parameter in the SNN simulation
-      - sweep several mean_weight values
-      - run simulate_trace + cross_validation_rf
-
-    Returns:
-      list[dict]: each dict has keys: param_value, weight, accuracy
-    """
+def test_parameter_values(
+    data,
+    labels,
+    param_name: str,
+    param_values: list[float],
+):
+    """Test different parameter values over a range of mean weights."""
     sim_params = SimulationParams(
         num_neurons=NUM_NEURONS,
         mean_weight=0.0,
@@ -259,7 +250,6 @@ def test_parameter_values(data, labels , param_name: str, param_values: list[flo
 
         # set the parameter we are testing
         if param_name == "beta":
-            # convert beta to k = beta * 2 * N
             sim_params.small_world_graph_k = int(param_value * NUM_NEURONS * 2)
         elif param_name == "current_amplitude":
             sim_params.current_amplitude = param_value
@@ -279,95 +269,154 @@ def test_parameter_values(data, labels , param_name: str, param_values: list[flo
             critical_weight * MAX_INTERVAL,
             NUM_WEIGHT_STEPS,
         )
-        
-        cnt=0
+
+        cnt = 0
         first_flag = True
         for weight in weight_values:
             cnt += 1
-            print(f"\n--- mean_weight = {weight:.6f} --- execution {cnt}/{NUM_WEIGHT_STEPS} with {param_name} = {param_value}")
+            print(
+                f"\n--- mean_weight = {weight:.6f} --- "
+                f"execution {cnt}/{NUM_WEIGHT_STEPS} "
+                f"with {param_name} = {param_value}"
+            )
             sim_params.mean_weight = weight
-            
-            statistics_dataset, trace_dataset, spike_count = simulate(
+
+            (
+                statistics_dataset,
+                trace_dataset,
+                spike_count,
+            ) = simulate(
                 data=data,
                 labels=labels,
                 parameters=sim_params,
                 trace_tau=TRACE_TAU,
                 statistic_set=STATISTIC_SET,
-                is_first= first_flag,
-                reload= RELOAD,
-                membrane_reset = MEMBRANE_RESET,
+                is_first=first_flag,
+                reload=RELOAD,
+                membrane_reset=MEMBRANE_RESET,
             )
-            
-            first_flag = False
-            mean_accuracy_rf_trace, std_accuracy_rf_trace, mean_f1_rf_trace, std_f1_rf_trace, mean_mcc_rf_trace, std_mcc_rf_trace = cross_validation_rf(
-                trace_dataset,
-                n_splits=CV_NUM_SPLITS,
-            )
-            print("Mean accuracy: ", mean_accuracy_rf_trace, " std accuracy: ", std_accuracy_rf_trace)
 
-            mean_accuracy_slp_trace, std_accuracy_slp_trace, mean_f1_slp_trace, std_f1_slp_trace, mean_mcc_slp_trace, std_mcc_slp_trace = cross_validation_slp(
+            first_flag = False
+
+            (
+                mean_accuracy_rf_trace,
+                std_accuracy_rf_trace,
+                mean_f1_rf_trace,
+                std_f1_rf_trace,
+                mean_mcc_rf_trace,
+                std_mcc_rf_trace,
+            ) = cross_validation_rf(
                 trace_dataset,
                 n_splits=CV_NUM_SPLITS,
             )
-            print("Mean accuracy: ", mean_accuracy_slp_trace, " std accuracy: ", std_accuracy_slp_trace)
+            print(
+                "Trace RF - mean accuracy: ",
+                mean_accuracy_rf_trace,
+                " std accuracy: ",
+                std_accuracy_rf_trace,
+            )
+
+            (
+                mean_accuracy_slp_trace,
+                std_accuracy_slp_trace,
+                mean_f1_slp_trace,
+                std_f1_slp_trace,
+                mean_mcc_slp_trace,
+                std_mcc_slp_trace,
+            ) = cross_validation_slp(
+                trace_dataset,
+                n_splits=CV_NUM_SPLITS,
+            )
+            print(
+                "Trace SLP - mean accuracy: ",
+                mean_accuracy_slp_trace,
+                " std accuracy: ",
+                std_accuracy_slp_trace,
+            )
 
             all_results_trace.append(
                 {
                     "param_value": float(param_value),
                     "weight": float(weight),
                     "accuracy_rf": float(mean_accuracy_rf_trace),
-                    "std_accuracy_rf": float(std_accuracy_rf_trace),                    
+                    "std_accuracy_rf": float(std_accuracy_rf_trace),
                     "accuracy_slp": float(mean_accuracy_slp_trace),
                     "std_accuracy_slp": float(std_accuracy_slp_trace),
                     "f1_rf": float(mean_f1_rf_trace),
-                    "std_f1_rf": float(std_f1_rf_trace),                    
+                    "std_f1_rf": float(std_f1_rf_trace),
                     "f1_slp": float(mean_f1_slp_trace),
                     "std_f1_slp": float(std_f1_slp_trace),
                     "mcc_rf": float(mean_mcc_rf_trace),
-                    "std_mcc_rf": float(std_mcc_rf_trace),                    
+                    "std_mcc_rf": float(std_mcc_rf_trace),
                     "mcc_slp": float(mean_mcc_slp_trace),
                     "std_mcc_slp": float(std_mcc_slp_trace),
-                    "spike_count": float(spike_count)
+                    "spike_count": float(spike_count),
                 }
             )
 
-            mean_accuracy_rf_statistics, std_accuracy_rf_statistics, mean_f1_rf_statistics, std_f1_rf_statistics, mean_mcc_rf_statistics, std_mcc_rf_statistics = cross_validation_rf(
+            (
+                mean_accuracy_rf_statistics,
+                std_accuracy_rf_statistics,
+                mean_f1_rf_statistics,
+                std_f1_rf_statistics,
+                mean_mcc_rf_statistics,
+                std_mcc_rf_statistics,
+            ) = cross_validation_rf(
                 statistics_dataset,
                 n_splits=CV_NUM_SPLITS,
             )
-            print("Mean accuracy: ", mean_accuracy_rf_statistics, " std accuracy: ", std_accuracy_rf_statistics)
+            print(
+                "Statistics RF - mean accuracy: ",
+                mean_accuracy_rf_statistics,
+                " std accuracy: ",
+                std_accuracy_rf_statistics,
+            )
 
-            mean_accuracy_slp_statistics, std_accuracy_slp_statistics, mean_f1_slp_statistics, std_f1_slp_statistics, mean_mcc_slp_statistics, std_mcc_slp_statistics = cross_validation_slp(
+            (
+                mean_accuracy_slp_statistics,
+                std_accuracy_slp_statistics,
+                mean_f1_slp_statistics,
+                std_f1_slp_statistics,
+                mean_mcc_slp_statistics,
+                std_mcc_slp_statistics,
+            ) = cross_validation_slp(
                 statistics_dataset,
                 n_splits=CV_NUM_SPLITS,
             )
-            print("Mean accuracy: ", mean_accuracy_slp_statistics, " std accuracy: ", std_accuracy_slp_statistics)
+            print(
+                "Statistics SLP - mean accuracy: ",
+                mean_accuracy_slp_statistics,
+                " std accuracy: ",
+                std_accuracy_slp_statistics,
+            )
 
             all_results_statistics.append(
                 {
                     "param_value": float(param_value),
                     "weight": float(weight),
                     "accuracy_rf": float(mean_accuracy_rf_statistics),
-                    "std_accuracy_rf": float(std_accuracy_rf_statistics),                    
+                    "std_accuracy_rf": float(std_accuracy_rf_statistics),
                     "accuracy_slp": float(mean_accuracy_slp_statistics),
                     "std_accuracy_slp": float(std_accuracy_slp_statistics),
                     "f1_rf": float(mean_f1_rf_statistics),
-                    "std_f1_rf": float(std_f1_rf_statistics),                    
+                    "std_f1_rf": float(std_f1_rf_statistics),
                     "f1_slp": float(mean_f1_slp_statistics),
                     "std_f1_slp": float(std_f1_slp_statistics),
                     "mcc_rf": float(mean_mcc_rf_statistics),
-                    "std_mcc_rf": float(std_mcc_rf_statistics),                    
+                    "std_mcc_rf": float(std_mcc_rf_statistics),
                     "mcc_slp": float(mean_mcc_slp_statistics),
                     "std_mcc_slp": float(std_mcc_slp_statistics),
-                    "spike_count": float(spike_count)
+                    "spike_count": float(spike_count),
                 }
             )
 
     return all_results_statistics, all_results_trace
 
-def main():
+
+def main() -> None:
+    """Load config, run sweeps, save results and metadata."""
     load_config()
-    
+
     os.makedirs("dati", exist_ok=True)
 
     data, labels = load_dataset(DATASET_PATH)
@@ -377,13 +426,21 @@ def main():
     os.makedirs(RESULTS_DIR_STATISTICS, exist_ok=True)
     os.makedirs(RESULTS_DIR_TRACE, exist_ok=True)
 
-    all_results_statistics, all_results_trace = test_parameter_values(data, labels, PARAM_NAME, PARAMETER_VALUES)
+    (
+        all_results_statistics,
+        all_results_trace,
+    ) = test_parameter_values(
+        data,
+        labels,
+        PARAM_NAME,
+        PARAMETER_VALUES,
+    )
 
     results_df_statistics = pd.DataFrame(all_results_statistics)
     results_df_statistics.to_csv(CSV_NAME_STATISTICS, index=False)
     print(f"Saved results to {CSV_NAME_STATISTICS}")
 
-    # 🔹 salvataggio metadata
+    # save metadata for statistics features
     save_experiment_metadata(
         results_dir=RESULTS_DIR_STATISTICS,
         parameter_name=PARAM_NAME,
@@ -396,7 +453,7 @@ def main():
     results_df_trace.to_csv(CSV_NAME_TRACE, index=False)
     print(f"Saved results to {CSV_NAME_TRACE}")
 
-    # 🔹 salvataggio metadata
+    # save metadata for trace features
     save_experiment_metadata(
         results_dir=RESULTS_DIR_TRACE,
         parameter_name=PARAM_NAME,
@@ -404,6 +461,7 @@ def main():
         output_features="trace",
         mean_I=mean_I,
     )
+
 
 if __name__ == "__main__":
     main()

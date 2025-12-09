@@ -227,7 +227,7 @@ def save_dataset(data: np.ndarray, labels: np.ndarray, out_path: Path = OUTPUT_F
     """Save compressed NPZ with 'data' and 'labels' arrays."""
     out_path.parent.mkdir(parents=True, exist_ok=True)
     np.savez_compressed(out_path, data=data, labels=labels)
-    print(f"✅ Dataset saved to: {out_path}")
+    print(f"Dataset saved to: {out_path}")
 
 
 # ----------------------------
