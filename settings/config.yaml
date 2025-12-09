@@ -1,33 +1,26 @@
-TASK: "MNIST"
+TASK: "MNIST"  # "MNIST" or "TRAJECTORY"
 
-CV_NUM_SPLITS: 10
-ACCURACY_THRESHOLD: 0.8
+CV_NUM_SPLITS: 10  # Number of folds for cross-validation
 
-NUM_NEURONS: 1000
-MEMBRANE_THRESHOLD: 2
-REFRACTORY_PERIOD: 2
-NUM_OUTPUT_NEURONS: 50
-LEAK_COEFFICIENT: 0.002
-CURRENT_AMPLITUDE: 2  
+NUM_NEURONS: 1000  # Use 1000 for MNIST; 2000 is recommended for TRAJECTORY
+MEMBRANE_THRESHOLD: 2  # Baseline firing threshold θ for neurons
+REFRACTORY_PERIOD: 2  # Refractory period (in time steps)
+NUM_OUTPUT_NEURONS: 50  # Number of readout/output neurons
+LEAK_COEFFICIENT: 0.002  # Mean membrane leak coefficient (mean of the leak distribution)
+CURRENT_AMPLITUDE: 2  # Amplitude of input current for active input spikes
 
-PRESYNAPTIC_DEGREE: 0.2
-SMALL_WORLD_GRAPH_P: 0.2
+PRESYNAPTIC_DEGREE: 0.2  # This is beta: each neuron has on average PRESYNAPTIC_DEGREE * N presynaptic neurons
+SMALL_WORLD_GRAPH_P: 0.2  # Rewiring probability for the small-world network
 
-TRACE_TAU: 60
-NUM_WEIGHT_STEPS: 101
+TRACE_TAU: 60  # Time constant for the neuron trace (suggested ~40 for TRAJECTORY)
+NUM_WEIGHT_STEPS: 101  # Number of mean-weight values to test
 
-WEIGHT_VARIANCE: 20
-RELOAD: true
-MEMBRANE_RESET: true
+WEIGHT_VARATION_COEFFICIENT: 20  # Coefficient controlling synaptic weight variability (e.g. 10 used for TRAJECTORY)
+RELOAD: true  # If true, reuse the same synaptic topology between experiments
+MEMBRANE_RESET: true  # If true, reset membrane potentials to the same random values for each experiment
 
-PARAM_NAME: "membrane_threshold"
-PARAMETER_VALUES:
+PARAM_NAME: "membrane_threshold"  # Name of the parameter to sweep
+PARAMETER_VALUES:  # Values of the swept parameter (here: MEMBRANE_THRESHOLD = θ)
   - 2
   - 1.43814651
   - 1.157219765
-
-#PARAM_NAME: "beta"
-#PARAMETER_VALUES:
-#  - 0.2
-#  - 0.3
-#  - 0.4

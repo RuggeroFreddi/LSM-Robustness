@@ -11,12 +11,11 @@ from functions.cross_validations import cross_validation_rf, cross_validation_sl
 
 # the following global variables will be loaded using function load_config
 MIN_INTERVAL = 1 / 100
-MAX_INTERVAL = 2
-WEIGHT_VARIANCE = None
+MAX_INTERVAL = 2.2
+WEIGHT_VARATION_COEFFICIENT = None
 RELOAD = None
 TASK = None
 CV_NUM_SPLITS = None
-ACCURACY_THRESHOLD = None
 NUM_NEURONS = None
 MEMBRANE_THRESHOLD = None
 REFRACTORY_PERIOD = None
@@ -40,14 +39,14 @@ MEMBRANE_RESET = None
 
 
 def load_config(path: str = "settings/config.yaml"):
-    global TASK, CV_NUM_SPLITS, ACCURACY_THRESHOLD
+    global TASK, CV_NUM_SPLITS
     global NUM_NEURONS, MEMBRANE_THRESHOLD, REFRACTORY_PERIOD, NUM_OUTPUT_NEURONS
     global LEAK_COEFFICIENT, CURRENT_AMPLITUDE, PRESYNAPTIC_DEGREE
     global SMALL_WORLD_GRAPH_P, SMALL_WORLD_GRAPH_K, TRACE_TAU
     global NUM_WEIGHT_STEPS, PARAM_NAME, PARAMETER_VALUES
     global DATASET_PATH, CSV_NAME_STATISTICS, CSV_NAME_TRACE
     global RESULTS_DIR_STATISTICS, RESULTS_DIR_TRACE
-    global STATISTIC_SET, MEMBRANE_RESET, WEIGHT_VARIANCE, RELOAD
+    global STATISTIC_SET, MEMBRANE_RESET, WEIGHT_VARATION_COEFFICIENT, RELOAD
 
     if not os.path.exists(path):
         raise FileNotFoundError(f"Config not found: {path}")
@@ -63,7 +62,6 @@ def load_config(path: str = "settings/config.yaml"):
     # assign to globals
     TASK = cfg["TASK"]
     CV_NUM_SPLITS = cfg["CV_NUM_SPLITS"]
-    ACCURACY_THRESHOLD = cfg["ACCURACY_THRESHOLD"]
     NUM_NEURONS = cfg["NUM_NEURONS"]
     MEMBRANE_THRESHOLD = cfg["MEMBRANE_THRESHOLD"]
     REFRACTORY_PERIOD = cfg["REFRACTORY_PERIOD"]
@@ -78,7 +76,7 @@ def load_config(path: str = "settings/config.yaml"):
     PARAM_NAME = cfg["PARAM_NAME"]
     PARAMETER_VALUES = cfg["PARAMETER_VALUES"]
     MEMBRANE_RESET = cfg["MEMBRANE_RESET"]
-    WEIGHT_VARIANCE = cfg["WEIGHT_VARIANCE"]
+    WEIGHT_VARATION_COEFFICIENT = cfg["WEIGHT_VARATION_COEFFICIENT"]
     RELOAD = cfg["RELOAD"]
 
     if MEMBRANE_RESET:
@@ -162,9 +160,8 @@ def save_experiment_metadata(
             "small_world_graph_p": SMALL_WORLD_GRAPH_P,
             "small_world_graph_k": SMALL_WORLD_GRAPH_K,
             "trace_tau": TRACE_TAU,
-            "weight_variance": WEIGHT_VARIANCE,
+            "weight_variation_coefficinet": WEIGHT_VARATION_COEFFICIENT,
             "cv_num_splits": CV_NUM_SPLITS,
-            "accuracy_threshold": ACCURACY_THRESHOLD,
             "membrane_reset": MEMBRANE_RESET,
             "reload": RELOAD,
         },
@@ -227,7 +224,7 @@ def test_parameter_values(
     sim_params = SimulationParams(
         num_neurons=NUM_NEURONS,
         mean_weight=0.0,
-        weight_variance=20,
+        weight_variance=WEIGHT_VARATION_COEFFICIENT,
         current_amplitude=CURRENT_AMPLITUDE,
         num_output_neurons=NUM_OUTPUT_NEURONS,
         is_random_uniform=False,

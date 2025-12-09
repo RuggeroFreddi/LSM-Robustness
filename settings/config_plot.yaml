@@ -1,0 +1,7 @@
+THRESHOLD: 0.85  # Relative threshold (fraction of max metric used to define intervals)
+
+TASK: "MNIST"  # "MNIST" or "TRAJECTORY"
+OUTPUT_FEATURES: "statistics"  # "statistics" or "trace"
+PARAM_NAME: "membrane_threshold"  # "beta", "membrane_threshold", or "current_amplitude"
+NUM_WEIGHT_STEPS: 11  # Typical values: 101 for MNIST, 71 for TRAJECTORY
+DATE: "2025_12_09"  # Date when the experiment data-generation program was started
