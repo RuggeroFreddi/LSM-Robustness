@@ -19,8 +19,11 @@ WEIGHT_VARIATION_COEFFICIENT: 20  # Coefficient controlling synaptic weight vari
 RELOAD: true  # If true, reuse the same synaptic topology between experiments
 MEMBRANE_RESET: true  # If true, reset membrane potentials to the same random values for each experiment
 
-PARAM_NAME: "membrane_threshold"  # Name of the parameter to sweep
-PARAMETER_VALUES:  # Values of the swept parameter (here: MEMBRANE_THRESHOLD = θ)
-  - 2
+PARAM_NAME: "membrane_threshold"  # Name of the parameter to sweep ("beta", "membrane_threshold", "current_amplitude")
+PARAMETER_VALUES:  # Values of the swept parameter 
+  - 2  
   - 1.43814651
   - 1.157219765
+
+# For parameter beta we used: 0.2, 0.3, 0.4
+# For parameter current_amplitude we used: 2.0, 1.0, 0.5
