@@ -7,7 +7,7 @@ import torch
 
 # === CONFIG ===
 NUM_TIMESTEPS_RATE = 200
-OUTPUT_RATE = "dati/mnist_rate_encoded.npz"
+OUTPUT_RATE = "data/mnist_rate_encoded.npz"
 NUM_SAMPLES = 6000
 
 
@@ -101,7 +101,6 @@ def encode_and_save_dataset(dataset, num_samples, num_timesteps, output_path, en
         if idx % 100 == 0:
             print(f"✅ Encoded {idx} images → {output_path}")
 
-    os.makedirs("dati", exist_ok=True)
     np.savez_compressed(output_path, data=encoded_images, labels=labels)
     print(f"🎉 Saved to '{output_path}'")
 

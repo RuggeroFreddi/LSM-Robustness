@@ -27,7 +27,7 @@ LABEL_NAMES: List[str] = [
     "random",
 ]
 
-DATA_DIR = Path("dati")
+DATA_DIR = Path("data")
 OUTPUT_FILE = DATA_DIR / "trajectory_spike_encoded.npz"
 
 # Optional: set to an int for reproducibility, or None for stochastic runs

@@ -5,8 +5,8 @@ import pandas as pd
 
 from LSM.model import Reservoir
 
-TOPOLOGY_PATH = "dati/topology.npz"
-MEMBRANE_POTENTIALS_PATH = "dati/membrane_potentials.npy"
+TOPOLOGY_PATH = "data/topology.npz"
+MEMBRANE_POTENTIALS_PATH = "data/membrane_potentials.npy"
 
 
 def simulate(

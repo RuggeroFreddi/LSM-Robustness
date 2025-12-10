@@ -12,7 +12,7 @@ from functions.cross_validations import cross_validation_rf, cross_validation_sl
 # the following global variables will be loaded using function load_config
 MIN_INTERVAL = 1 / 100
 MAX_INTERVAL = 2.2
-WEIGHT_VARATION_COEFFICIENT = None
+WEIGHT_VARIATION_COEFFICIENT = None
 RELOAD = None
 TASK = None
 CV_NUM_SPLITS = None
@@ -46,7 +46,7 @@ def load_config(path: str = "settings/config.yaml"):
     global NUM_WEIGHT_STEPS, PARAM_NAME, PARAMETER_VALUES
     global DATASET_PATH, CSV_NAME_STATISTICS, CSV_NAME_TRACE
     global RESULTS_DIR_STATISTICS, RESULTS_DIR_TRACE
-    global STATISTIC_SET, MEMBRANE_RESET, WEIGHT_VARATION_COEFFICIENT, RELOAD
+    global STATISTIC_SET, MEMBRANE_RESET, WEIGHT_VARIATION_COEFFICIENT, RELOAD
 
     if not os.path.exists(path):
         raise FileNotFoundError(f"Config not found: {path}")
@@ -76,7 +76,7 @@ def load_config(path: str = "settings/config.yaml"):
     PARAM_NAME = cfg["PARAM_NAME"]
     PARAMETER_VALUES = cfg["PARAMETER_VALUES"]
     MEMBRANE_RESET = cfg["MEMBRANE_RESET"]
-    WEIGHT_VARATION_COEFFICIENT = cfg["WEIGHT_VARATION_COEFFICIENT"]
+    WEIGHT_VARIATION_COEFFICIENT = cfg["WEIGHT_VARIATION_COEFFICIENT"]
     RELOAD = cfg["RELOAD"]
 
     if MEMBRANE_RESET:
@@ -85,10 +85,10 @@ def load_config(path: str = "settings/config.yaml"):
         print("membrane reset false")
 
     if TASK == "MNIST":
-        DATASET_PATH = "dati/mnist_rate_encoded.npz"
+        DATASET_PATH = "data/mnist_rate_encoded.npz"
         STATISTIC_SET = 1
     elif TASK == "TRAJECTORY":
-        DATASET_PATH = "dati/trajectory_spike_encoded.npz"
+        DATASET_PATH = "data/trajectory_spike_encoded.npz"
         STATISTIC_SET = 2
     else:
         print("Selected unknown task.")
@@ -160,7 +160,7 @@ def save_experiment_metadata(
             "small_world_graph_p": SMALL_WORLD_GRAPH_P,
             "small_world_graph_k": SMALL_WORLD_GRAPH_K,
             "trace_tau": TRACE_TAU,
-            "weight_variation_coefficinet": WEIGHT_VARATION_COEFFICIENT,
+            "weight_variation_coefficinet": WEIGHT_VARIATION_COEFFICIENT,
             "cv_num_splits": CV_NUM_SPLITS,
             "membrane_reset": MEMBRANE_RESET,
             "reload": RELOAD,
@@ -224,7 +224,7 @@ def test_parameter_values(
     sim_params = SimulationParams(
         num_neurons=NUM_NEURONS,
         mean_weight=0.0,
-        weight_variance=WEIGHT_VARATION_COEFFICIENT,
+        weight_variance=WEIGHT_VARIATION_COEFFICIENT,
         current_amplitude=CURRENT_AMPLITUDE,
         num_output_neurons=NUM_OUTPUT_NEURONS,
         is_random_uniform=False,
@@ -414,7 +414,7 @@ def main() -> None:
     """Load config, run sweeps, save results and metadata."""
     load_config()
 
-    os.makedirs("dati", exist_ok=True)
+    os.makedirs("data", exist_ok=True)
 
     data, labels = load_dataset(DATASET_PATH)
     print(f"Loaded data: {data.shape}, labels: {labels.shape}")

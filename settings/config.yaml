@@ -15,7 +15,7 @@ SMALL_WORLD_GRAPH_P: 0.2  # Rewiring probability for the small-world network
 TRACE_TAU: 60  # Time constant for the neuron trace (suggested ~40 for TRAJECTORY)
 NUM_WEIGHT_STEPS: 101  # Number of mean-weight values to test
 
-WEIGHT_VARATION_COEFFICIENT: 20  # Coefficient controlling synaptic weight variability (e.g. 10 used for TRAJECTORY)
+WEIGHT_VARIATION_COEFFICIENT: 20  # Coefficient controlling synaptic weight variability (e.g. 10 used for TRAJECTORY)
 RELOAD: true  # If true, reuse the same synaptic topology between experiments
 MEMBRANE_RESET: true  # If true, reset membrane potentials to the same random values for each experiment
 
