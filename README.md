@@ -13,17 +13,17 @@ In this work, robustness is quantified as the range of mean synaptic weights for
 
 ## Workflow Summary
 
-1. Generate spike-train datasets from raw data.
-2. Run LSM experiments driven by a YAML configuration file.
-3. Post-process results to obtain metrics, robustness intervals, and plots.
+1. Dataset Generation: generate spike-train datasets from raw data.
+2. Experiment Execution: run LSM experiments driven by a YAML configuration file.
+3. Post-processing and Visualization: post-process results to obtain metrics, robustness intervals, and plots.
 
-All steps are reproducible and configuration-driven.
+All steps are reproducible and configuration-driven (see Configuration Files).
 
 ---
 
 ## Main Scripts
 
-### Dataset Generation
+### 1. Dataset Generation
 
 - **`generate_MNIST_dataset.py`**  
   Generates a spike-train version of the MNIST dataset and saves it in the `data/` directory.  
@@ -38,7 +38,7 @@ These datasets are used as inputs to the LSM.
 
 ---
 
-### Experiment Execution
+### 2. Experiment Execution
 
 - **`experiment.py`**  
   Runs the main experimental pipeline.
@@ -56,7 +56,7 @@ For each experiment, the script produces:
 
 ---
 
-### Post-processing and Visualization
+### 3. Post-processing and Visualization
 
 - **`post_processing.py`**  
   Processes and visualizes experimental results.
